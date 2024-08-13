@@ -1,5 +1,6 @@
 package com.example.accountservice.controller;
 
+import com.example.accountservice.model.TransferRequest;
 import com.example.accountservice.model.UserAccount;
 import com.example.accountservice.service.UserAccountService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,11 +17,6 @@ public class UserAccountController {
     @Autowired
     private UserAccountService service;
 
-//    @GetMapping("/test")
-//    public String test() {
-//        return "Account service is running";
-//    }
-
     @GetMapping
     public List<UserAccount> getAllAccounts() {
         return service.getAllAccounts();
@@ -35,6 +31,7 @@ public class UserAccountController {
     public UserAccount createAccount(@RequestBody UserAccount account) {
         return service.saveAccount(account);
     }
+
     @PutMapping("/{username}")
     public UserAccount updateAccount(@PathVariable String username, @RequestBody UserAccount account) {
         return service.updateAccount(username, account);
@@ -44,6 +41,7 @@ public class UserAccountController {
     public void deleteAccount(@PathVariable Long id) {
         service.deleteAccount(id);
     }
+
     @GetMapping("/{username}")
     public ResponseEntity<UserAccount> getAccountByUsername(@PathVariable String username) {
         UserAccount account = service.getAccountByUsername(username);
@@ -54,4 +52,13 @@ public class UserAccountController {
         }
     }
 
+    @PostMapping("/transfer")
+    public ResponseEntity<String> transferMoney(@RequestBody TransferRequest request) {
+        try {
+            service.transferMoney(request.getSenderIban(), request.getReceiverIban(), request.getAmount());
+            return ResponseEntity.ok("Transfer successful");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
 }

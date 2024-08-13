@@ -1,6 +1,8 @@
 package com.example.accountservice.model;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "Account")
@@ -11,6 +13,9 @@ public class UserAccount {
     private Long id;
     private String username;
     private Double balance;
+    @Getter
+    @Column(unique = true, nullable = false)
+    private String iban;
 
     // Getters and Setters
 
@@ -36,5 +41,9 @@ public class UserAccount {
 
     public void setBalance(Double balance) {
         this.balance = balance;
+    }
+
+    public void setIban(String iban) {
+        this.iban = iban;
     }
 }
