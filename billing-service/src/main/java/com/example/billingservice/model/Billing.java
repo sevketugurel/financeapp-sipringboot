@@ -3,8 +3,6 @@ package com.example.billingservice.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.antlr.v4.runtime.misc.NotNull;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -13,40 +11,37 @@ public class Billing {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Getter
+    @Setter
     private Long id;
 
     @Getter
     @Setter
-    @NotNull
-    private String username; // Kullanıcı adı
+    private String username;
 
     @Getter
     @Setter
-    @NotNull
-    private Double amount; // Fatura tutarı
+    private Double amount;
 
     @Getter
     @Setter
-    @NotNull
-    private LocalDateTime billingDate; // Fatura tarihi
+    private LocalDateTime billingDate;
 
     @Getter
     @Setter
-    private LocalDateTime paymentDate; // Ödeme tarihi
+    private LocalDateTime paymentDate;
 
     @Getter
     @Setter
-    private Boolean isPaid; // Fatura ödendi mi?
+    private Boolean isPaid;
 
     @Getter
     @Setter
-    private Boolean autoPay; // Otomatik ödeme aktif mi?
+    private Boolean autoPay;
 
-    @Setter
     @Getter
-    private Long price;
-
-    private String billingName;
+    @Setter
+    private String description;  // Faturanın açıklaması
 
     public Billing() {
         this.billingDate = LocalDateTime.now(); // Fatura oluşturulduğunda tarih atanır

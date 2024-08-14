@@ -24,4 +24,9 @@ public class TransactionService {
         // İşlem kaydedilir ve geri döner
         return repository.save(transaction);
     }
+
+    public void deleteTransaction(Long id) {
+        // İşlem silinir
+        repository.deleteById(id);
+    }
 }

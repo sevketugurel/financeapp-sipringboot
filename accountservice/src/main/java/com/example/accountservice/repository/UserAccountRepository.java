@@ -1,13 +1,13 @@
 package com.example.accountservice.repository;
 
-import com.example.accountservice.model.UserAccount;
+import com.example.accountservice.model.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface UserAccountRepository extends JpaRepository<UserAccount, Long> {
+public interface UserAccountRepository extends JpaRepository<Account, Long> {
 
-    Optional<UserAccount> findByUsername(String username);
-    Optional<UserAccount> findByIban(String iban);
+    Optional<Account> findByUsername(String username);
+    Optional<Account> findByIban(String iban);
 
 }

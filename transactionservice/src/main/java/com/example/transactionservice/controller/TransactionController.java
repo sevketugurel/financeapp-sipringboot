@@ -26,4 +26,9 @@ public class TransactionController {
         Transaction savedTransaction = transactionService.saveTransaction(transaction);
         return ResponseEntity.ok(savedTransaction);
     }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) {
+        transactionService.deleteTransaction(id);
+        return ResponseEntity.noContent().build();
+    }
 }

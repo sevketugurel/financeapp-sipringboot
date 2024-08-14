@@ -1,9 +1,8 @@
 package com.example.accountservice.service;
 
 import com.example.accountservice.client.TransactionClient;
-import com.example.accountservice.model.AccountTransaction;
-import com.example.accountservice.model.UserAccount;
-import com.example.accountservice.model.TransferRequest;
+import com.example.accountservice.model.Transaction;
+import com.example.accountservice.model.Account;
 import com.example.accountservice.repository.UserAccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,16 +24,16 @@ public class UserAccountService {
         this.transactionClient = transactionClient;
     }
 
-    public List<UserAccount> getAllAccounts() {
+    public List<Account> getAllAccounts() {
         return repository.findAll();
     }
 
-    public UserAccount getAccountById(Long id) {
+    public Account getAccountById(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Account not found with ID: " + id));
     }
 
-    public UserAccount saveAccount(UserAccount account) {
+    public Account saveAccount(Account account) {
         // IBAN'in unique olduğundan emin olun
         if (repository.findByIban(account.getIban()).isPresent()) {
             throw new RuntimeException("Account with IBAN already exists: " + account.getIban());
@@ -49,8 +48,8 @@ public class UserAccountService {
         repository.deleteById(id);
     }
 
-    public UserAccount updateAccount(String username, UserAccount account) {
-        UserAccount existingAccount = repository.findByUsername(username)
+    public Account updateAccount(String username, Account account) {
+        Account existingAccount = repository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Account not found with username: " + username));
 
         // Güncellenen bilgileri mevcut hesaba aktarın
@@ -61,15 +60,15 @@ public class UserAccountService {
         return repository.save(existingAccount);
     }
 
-    public UserAccount getAccountByUsername(String username) {
+    public Account getAccountByUsername(String username) {
         return repository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Account not found with username: " + username));
     }
 
     public void transferMoney(String senderIban, String receiverIban, Double amount) {
-        UserAccount sender = repository.findByIban(senderIban)
+        Account sender = repository.findByIban(senderIban)
                 .orElseThrow(() -> new RuntimeException("Sender account not found with IBAN: " + senderIban));
-        UserAccount receiver = repository.findByIban(receiverIban)
+        Account receiver = repository.findByIban(receiverIban)
                 .orElseThrow(() -> new RuntimeException("Receiver account not found with IBAN: " + receiverIban));
 
         if (sender.getBalance() < amount) {
@@ -84,7 +83,7 @@ public class UserAccountService {
         repository.save(receiver);
 
         // TransactionService'e transferi bildir
-        AccountTransaction transaction = new AccountTransaction();
+        Transaction transaction = new Transaction();
         transaction.setServiceName("AccountService");
         transaction.setAccountId(sender.getId().toString());
         transaction.setAmount(-amount);
@@ -99,7 +98,7 @@ public class UserAccountService {
         transactionClient.saveTransaction(transaction);
 
         // Alıcı için de bir Transaction kaydedin
-        AccountTransaction receiverTransaction = new AccountTransaction();
+        Transaction receiverTransaction = new Transaction();
         receiverTransaction.setServiceName("AccountService");
         receiverTransaction.setAccountId(receiver.getId().toString());
         receiverTransaction.setAmount(amount);

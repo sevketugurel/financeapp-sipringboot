@@ -1,7 +1,7 @@
 package com.example.accountservice.controller;
 
 import com.example.accountservice.model.TransferRequest;
-import com.example.accountservice.model.UserAccount;
+import com.example.accountservice.model.Account;
 import com.example.accountservice.service.UserAccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,22 +18,22 @@ public class UserAccountController {
     private UserAccountService service;
 
     @GetMapping
-    public List<UserAccount> getAllAccounts() {
+    public List<Account> getAllAccounts() {
         return service.getAllAccounts();
     }
 
-    @GetMapping("/user/{id}")
-    public UserAccount getAccountById(@PathVariable Long id) {
+    @GetMapping("/{id}")
+    public Account getAccountById(@PathVariable Long id) {
         return service.getAccountById(id);
     }
 
     @PostMapping
-    public UserAccount createAccount(@RequestBody UserAccount account) {
+    public Account createAccount(@RequestBody Account account) {
         return service.saveAccount(account);
     }
 
     @PutMapping("/{username}")
-    public UserAccount updateAccount(@PathVariable String username, @RequestBody UserAccount account) {
+    public Account updateAccount(@PathVariable String username, @RequestBody Account account) {
         return service.updateAccount(username, account);
     }
 
@@ -42,9 +42,9 @@ public class UserAccountController {
         service.deleteAccount(id);
     }
 
-    @GetMapping("/{username}")
-    public ResponseEntity<UserAccount> getAccountByUsername(@PathVariable String username) {
-        UserAccount account = service.getAccountByUsername(username);
+    @GetMapping("/user/{username}")
+    public ResponseEntity<Account> getAccountByUsername(@PathVariable String username) {
+        Account account = service.getAccountByUsername(username);
         if (account != null) {
             return ResponseEntity.ok(account);
         } else {

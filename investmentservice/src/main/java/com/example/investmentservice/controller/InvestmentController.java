@@ -37,11 +37,34 @@ public class InvestmentController {
     }
 
     // Yeni yatırım oluştur
-    @PostMapping()
-    public ResponseEntity<Investment> createInvestment(@RequestBody Investment investment) {
+    @PostMapping("/buy")
+    public ResponseEntity<Investment> buyInvestment(@RequestBody Investment investmentRequest) {
         try {
-            Investment createdInvestment = investmentService.saveInvestment(investment);
+            Investment createdInvestment = investmentService.buyInvestment(
+                    investmentRequest.getUsername(),
+                    investmentRequest.getInvestmentType(),
+                    investmentRequest.getQuantity(),
+                    investmentRequest.getPricePerUnit()
+            );
             return new ResponseEntity<>(createdInvestment, HttpStatus.CREATED);
+        } catch (Exception e) {
+            // Hata mesajını logla
+            e.printStackTrace();
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Yatırımı sat
+    @PostMapping("/sell")
+    public ResponseEntity<Investment> sellInvestment(@RequestBody Investment investmentRequest) {
+        try {
+            Investment updatedInvestment = investmentService.sellInvestment(
+                    investmentRequest.getUsername(),
+                    investmentRequest.getInvestmentType(),
+                    investmentRequest.getQuantity(),
+                    investmentRequest.getPricePerUnit()
+            );
+            return new ResponseEntity<>(updatedInvestment, HttpStatus.OK);
         } catch (Exception e) {
             // Hata mesajını logla
             e.printStackTrace();

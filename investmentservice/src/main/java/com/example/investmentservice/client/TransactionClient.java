@@ -1,6 +1,6 @@
-package com.example.accountservice.client;
+package com.example.investmentservice.client;
 
-import com.example.accountservice.model.Transaction;
+import com.example.investmentservice.model.Transaction;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

@@ -1,6 +1,6 @@
-package com.example.accountservice.model;
+package com.example.billingservice.model;
 
-import com.example.accountservice.converter.JsonAttributeConverter;
+import com.example.billingservice.converter.JsonAttributeConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,8 +9,8 @@ import java.util.Date;
 import java.util.Map;
 
 @Entity
-@Table(name = "account_transaction")
-public class AccountTransaction {
+@Table(name = "billing_transaction")
+public class Transaction {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,7 +18,7 @@ public class AccountTransaction {
 
     @Getter
     @Setter
-    private String serviceName = "AccountService";
+    private String serviceName = "BillingService";
 
     @Getter
     @Setter
