@@ -8,6 +8,8 @@ import com.example.billingservice.model.Billing;
 import com.example.billingservice.model.Transaction;
 import com.example.billingservice.repository.BillingRepository;
 import feign.FeignException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -20,68 +22,95 @@ import java.util.Map;
 @Service
 public class BillingService {
 
+    private static final Logger logger = LoggerFactory.getLogger(BillingService.class);
+
     private final BillingRepository billingRepository;
     private final AccountServiceClient accountServiceClient;
     private final TransactionClient transactionClient;
 
-    public BillingService(BillingRepository billingRepository, AccountServiceClient accountServiceClient,
-                          TransactionClient transactionClient) {
+    public BillingService(
+            BillingRepository billingRepository, AccountServiceClient accountServiceClient,
+            TransactionClient transactionClient) {
         this.billingRepository = billingRepository;
         this.accountServiceClient = accountServiceClient;
         this.transactionClient = transactionClient;
     }
 
     public List<Billing> getBillingHistory(String username) {
-        return billingRepository.findByUsername(username); // Fatura geçmişini getir
+        logger.info("Retrieving billing history for username: {}", username);
+        return billingRepository.findByUsername(username);
     }
 
     public Billing payBilling(Long id) {
+        logger.info("Attempting to pay billing with ID: {}", id);
+
         Billing billing = billingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Billing not found with ID: " + id));
+                .orElseThrow(() -> {
+                    logger.error("Billing not found with ID: {}", id);
+                    return new RuntimeException("Billing not found with ID: " + id);
+                });
+
+        logger.info("Billing found for ID: {}. Username: {}", id, billing.getUsername());
 
         Account account = retrieveAccount(billing.getUsername());
 
-        // Hesap bakiyesi yeterli mi kontrol et
         if (account.getBalance() >= billing.getAmount()) {
-            // Bakiyeden düş
-            account.setBalance(account.getBalance() - billing.getAmount());
-            accountServiceClient.updateAccount(account.getUsername(),account);
+            logger.info("Sufficient balance available for user: {}. Proceeding with payment.", billing.getUsername());
 
-            // Fatura ödendi olarak işaretle ve ödeme tarihini ayarla
+            account.setBalance(account.getBalance() - billing.getAmount());
+            accountServiceClient.updateAccount(account.getUsername(), account);
+            logger.info("Account balance updated for user: {}", billing.getUsername());
+
             billing.setIsPaid(true);
             billing.setPaymentDate(LocalDateTime.now());
             Billing savedBilling = billingRepository.save(billing);
+            logger.info("Billing marked as paid and saved for ID: {}", id);
 
-            // Ödeme işlemini TransactionService'e bildir
             notifyTransaction(account, billing);
 
             return savedBilling;
         } else {
+            logger.error("Insufficient balance for user: {}", billing.getUsername());
             throw new RuntimeException("Insufficient balance for user: " + billing.getUsername());
         }
     }
 
     public void enableAutoPay(Long id) {
+        logger.info("Enabling auto-pay for Billing ID: {}", id);
+
         Billing billing = billingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Billing not found with ID: " + id));
-        billing.setAutoPay(true); // Otomatik ödeme aktif hale getir
+                .orElseThrow(() -> {
+                    logger.error("Billing not found with ID: {}", id);
+                    return new RuntimeException("Billing not found with ID: " + id);
+                });
+
+        billing.setAutoPay(true);
         billingRepository.save(billing);
+
+        logger.info("Auto-pay enabled and saved for Billing ID: {}", id);
     }
 
     private Account retrieveAccount(String username) {
+        logger.info("Retrieving account for username: {}", username);
+
         try {
             ResponseEntity<Account> response = accountServiceClient.getAccountByUsername(username);
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                logger.info("Account successfully retrieved for username: {}", username);
                 return response.getBody();
             } else {
+                logger.error("Account not found for username: {}", username);
                 throw new AccountNotFoundException("Account not found for username: " + username);
             }
         } catch (FeignException e) {
+            logger.error("Error occurred while retrieving account for username: {}. FeignException: {}", username, e.getMessage());
             throw new AccountNotFoundException("Account service returned an error: " + e.getMessage());
         }
     }
 
     private void notifyTransaction(Account account, Billing billing) {
+        logger.info("Notifying TransactionService about payment for Billing ID: {}", billing.getId());
+
         Transaction transaction = new Transaction();
         transaction.setServiceName("BillingService");
         transaction.setAccountId(account.getId().toString());
@@ -95,10 +124,18 @@ public class BillingService {
         details.put("action", "pay");
         transaction.setDetails(details);
 
-        transactionClient.saveTransaction(transaction);
+        try {
+            transactionClient.saveTransaction(transaction);
+            logger.info("Transaction successfully notified for Billing ID: {}", billing.getId());
+        } catch (FeignException e) {
+            logger.error("Failed to notify TransactionService for Billing ID: {}. FeignException: {}", billing.getId(), e.getMessage());
+        }
     }
 
     public Billing createBilling(Billing billing) {
-        return billingRepository.save(billing);
+        logger.info("Creating new billing for username: {}", billing.getUsername());
+        Billing createdBilling = billingRepository.save(billing);
+        logger.info("Billing created with ID: {}", createdBilling.getId());
+        return createdBilling;
     }
 }

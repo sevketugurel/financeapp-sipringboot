@@ -27,7 +27,7 @@ public class BillingController {
         return new ResponseEntity<>(createdBilling, HttpStatus.CREATED);
     }
 
-    @PostMapping("/pay/{id}")
+    @PutMapping("/pay/{id}")
     public ResponseEntity<Billing> payBilling(@PathVariable Long id) {
         Billing paidBilling = billingService.payBilling(id);
         return new ResponseEntity<>(paidBilling, HttpStatus.OK);

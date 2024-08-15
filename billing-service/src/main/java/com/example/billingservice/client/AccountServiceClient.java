@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 @FeignClient(name = "accountservice") // Eureka üzerinde accountservice adını taşıyan servise bağlanır.
 public interface AccountServiceClient {
 
-    @GetMapping("/accounts/{username}")
+    @GetMapping("/accounts/user/{username}")
     ResponseEntity<Account> getAccountByUsername(@PathVariable String username);
 
     @PutMapping("/accounts/{username}")
