@@ -2,7 +2,7 @@ package com.example.billingservice.service;
 
 import com.example.billingservice.client.AccountServiceClient;
 import com.example.billingservice.client.TransactionClient;
-import com.example.billingservice.exception.AccountNotFoundException;
+import com.example.billingservice.exception.*;
 import com.example.billingservice.model.Account;
 import com.example.billingservice.model.Billing;
 import com.example.billingservice.model.Transaction;
@@ -29,8 +29,7 @@ public class BillingService {
     private final TransactionClient transactionClient;
 
     public BillingService(
-            BillingRepository billingRepository, AccountServiceClient accountServiceClient,
-            TransactionClient transactionClient) {
+            BillingRepository billingRepository, AccountServiceClient accountServiceClient, TransactionClient transactionClient) {
         this.billingRepository = billingRepository;
         this.accountServiceClient = accountServiceClient;
         this.transactionClient = transactionClient;
@@ -47,32 +46,38 @@ public class BillingService {
         Billing billing = billingRepository.findById(id)
                 .orElseThrow(() -> {
                     logger.error("Billing not found with ID: {}", id);
-                    return new RuntimeException("Billing not found with ID: " + id);
+                    return new BillingNotFoundException("Billing not found with ID: " + id);
                 });
 
         logger.info("Billing found for ID: {}. Username: {}", id, billing.getUsername());
 
         Account account = retrieveAccount(billing.getUsername());
+        if(!billing.getIsPaid()){
+            logger.info("Billing is not paid for ID: {}. Proceeding with payment.", id);
+            if (account.getBalance() >= billing.getAmount()) {
+                logger.info("Sufficient balance available for user: {}. Proceeding with payment.", billing.getUsername());
 
-        if (account.getBalance() >= billing.getAmount()) {
-            logger.info("Sufficient balance available for user: {}. Proceeding with payment.", billing.getUsername());
+                account.setBalance(account.getBalance() - billing.getAmount());
+                accountServiceClient.updateAccount(account.getUsername(), account);
+                logger.info("Account balance updated for user: {}", billing.getUsername());
 
-            account.setBalance(account.getBalance() - billing.getAmount());
-            accountServiceClient.updateAccount(account.getUsername(), account);
-            logger.info("Account balance updated for user: {}", billing.getUsername());
+                billing.setIsPaid(true);
+                billing.setPaymentDate(LocalDateTime.now());
+                Billing savedBilling = billingRepository.save(billing);
+                logger.info("Billing marked as paid and saved for ID: {}", id);
 
-            billing.setIsPaid(true);
-            billing.setPaymentDate(LocalDateTime.now());
-            Billing savedBilling = billingRepository.save(billing);
-            logger.info("Billing marked as paid and saved for ID: {}", id);
+                notifyTransaction(account, billing);
 
-            notifyTransaction(account, billing);
-
-            return savedBilling;
+                return savedBilling;
+            } else {
+                logger.error("Insufficient balance for user: {}", billing.getUsername());
+                throw new InsufficientBalanceException("Insufficient balance for user: " + billing.getUsername());
+            }
         } else {
-            logger.error("Insufficient balance for user: {}", billing.getUsername());
-            throw new RuntimeException("Insufficient balance for user: " + billing.getUsername());
+            logger.error("Billing is already paid for ID: {}", id);
+            throw new BillingPaidException("Billing is already paid for ID: " + id);
         }
+        
     }
 
     public void enableAutoPay(Long id) {
@@ -81,7 +86,7 @@ public class BillingService {
         Billing billing = billingRepository.findById(id)
                 .orElseThrow(() -> {
                     logger.error("Billing not found with ID: {}", id);
-                    return new RuntimeException("Billing not found with ID: " + id);
+                    return new BillingNotFoundException("Billing not found with ID: " + id);
                 });
 
         billing.setAutoPay(true);
@@ -129,6 +134,7 @@ public class BillingService {
             logger.info("Transaction successfully notified for Billing ID: {}", billing.getId());
         } catch (FeignException e) {
             logger.error("Failed to notify TransactionService for Billing ID: {}. FeignException: {}", billing.getId(), e.getMessage());
+            throw new TransactionServiceException("Failed to notify TransactionService for Billing ID: " + billing.getId(), e);
         }
     }
 
