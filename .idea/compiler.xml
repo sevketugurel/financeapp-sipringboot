@@ -7,14 +7,17 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="analytics-service" />
         <module name="eureka-server" />
         <module name="accountservice" />
-        <module name="loan-service" />
         <module name="billing-service" />
         <module name="investmentservice" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="analytics-service" target="17" />
+      <module name="loan-service" target="17" />
+      <module name="transactionservice" target="17" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
@@ -24,6 +27,7 @@
       <module name="eureka-server" options="-parameters" />
       <module name="investmentservice" options="-parameters" />
       <module name="loan-service" options="-parameters" />
+      <module name="transactionservice" options="-parameters" />
     </option>
   </component>
 </project>
