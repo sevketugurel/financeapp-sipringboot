@@ -1,1 +1,1 @@
-# financeapp-sipringboot
+# financeapp-springboot
