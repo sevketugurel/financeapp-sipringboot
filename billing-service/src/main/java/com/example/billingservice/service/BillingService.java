@@ -140,6 +140,10 @@ public class BillingService {
 
     public Billing createBilling(Billing billing) {
         logger.info("Creating new billing for username: {}", billing.getUsername());
+        if(retrieveAccount(billing.getUsername()) == null){
+            logger.error("Account not found for username: {}", billing.getUsername());
+            throw new AccountNotFoundException("Account not found for username: " + billing.getUsername());
+        }
         Billing createdBilling = billingRepository.save(billing);
         logger.info("Billing created with ID: {}", createdBilling.getId());
         return createdBilling;

@@ -2,16 +2,16 @@ spring:
   application:
     name: investmentservice
   datasource:
-    url: jdbc:mysql://localhost:3306/investmentdb
+    url: jdbc:mysql://localhost:3306/investmentdb # çok önemli
     username: investmentuser
     password: investmentpassword
     driver-class-name: com.mysql.cj.jdbc.Driver
-  jpa:
+  jpa: # önemli
     hibernate:
       ddl-auto: update
     show-sql: true
     properties:
-      hibernate:
+      hibernate: # çok önemli
         dialect: org.hibernate.dialect.MySQLDialect
 
 eureka:

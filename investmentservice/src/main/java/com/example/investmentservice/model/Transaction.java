@@ -1,6 +1,6 @@
 package com.example.investmentservice.model;
 
-import  com.example.accountservice.converter.JsonAttributeConverter;
+import  com.example.investmentservice.converter.JsonAttributeConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

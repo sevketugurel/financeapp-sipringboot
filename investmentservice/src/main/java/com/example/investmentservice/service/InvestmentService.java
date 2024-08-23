@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -36,57 +37,54 @@ public class InvestmentService {
     }
 
     public Investment buyInvestment(String username, String investmentType, int quantity, double pricePerUnit) {
+        // Ondalık format için
+        DecimalFormat df = new DecimalFormat("#.##");
+
         // AccountService'ten kullanıcı bakiyesini kontrol et
         Account account = retrieveAccount(username);
 
         double totalCost = quantity * pricePerUnit;
-
-        // Yatırım bakiyesi yeterli mi kontrol et
-        Optional<Investment> optionalInvestment = investmentRepository.findByUsernameAndInvestmentType(username,
-                investmentType);
-        if (optionalInvestment.isPresent()) { // Eğer yatırım varsa
-            Investment existingInvestment = optionalInvestment.get();
-            // Eğer yatırım bakiyesi yeterli değilse
-            if (existingInvestment.getInvestmentBalance() < totalCost) {
-                throw new BalanceException("Insufficient investment balance for " + investmentType);
-            }
-        }
+        totalCost = Double.valueOf(df.format(totalCost)); // Sadece 2 basamak göster
 
         // Hesap bakiyesi yeterli mi kontrol et
-        if (account.getBalance() >= totalCost) {
-            // Yatırım işlemini gerçekleştir ve hesaptan miktarı düş
-            account.setBalance(account.getBalance() - totalCost);
-            accountServiceClient.updateAccount(account, username);
-
-            Investment investment = optionalInvestment.orElseGet(() -> new Investment(username, investmentType, 0, 0.0));
-
-            // investmentName'i kontrol et ve set et
-            if (investment.getInvestmentName() == null || investment.getInvestmentName().isEmpty()) {
-                investment.setInvestmentName("STOCK"); // Burada uygun bir yatırım adı atanmalı
-            }
-
-            // Yeni ortalama birim fiyatını hesapla
-            double totalInvestmentValue = (investment.getQuantity() * investment.getPricePerUnit()) + totalCost;
-            int newQuantity = investment.getQuantity() + quantity;
-            double newAveragePrice = totalInvestmentValue / newQuantity;
-
-            investment.setQuantity(newQuantity);
-            investment.setPricePerUnit(newAveragePrice);
-            investment.updateAmount();  // Toplam değeri günceller
-            investment.updateInvestmentBalance(); // Yatırım bakiyesini günceller
-
-            Investment savedInvestment = investmentRepository.save(investment);
-
-            // TransactionService'e işlemi bildir
-            notifyTransaction(account, totalCost, investmentType, quantity, pricePerUnit, "buy");
-
-            return savedInvestment;
-        } else {
+        if (account.getBalance() < totalCost) {
             throw new BalanceException("Insufficient account balance for username: " + username);
         }
-    }
 
+        // Yatırım işlemini gerçekleştir ve hesaptan miktarı düş
+        account.setBalance(account.getBalance() - totalCost);
+        accountServiceClient.updateAccount(account, username);
+
+        // Mevcut yatırımı kontrol et
+        Optional<Investment> optionalInvestment = investmentRepository.findByUsernameAndInvestmentType(username, investmentType);
+        Investment investment = optionalInvestment.orElseGet(() -> new Investment(username, investmentType, 0, 0.0));
+
+        // investmentName'i kontrol et ve set et
+        if (investment.getInvestmentName() == null || investment.getInvestmentName().isEmpty()) {
+            investment.setInvestmentName("STOCK"); // Burada uygun bir yatırım adı atanmalı
+        }
+
+        // Yeni ortalama birim fiyatını hesapla
+        double totalInvestmentValue = (investment.getQuantity() * investment.getPricePerUnit()) + totalCost;
+        int newQuantity = investment.getQuantity() + quantity;
+        double newAveragePrice = totalInvestmentValue / newQuantity;
+        newAveragePrice = Double.valueOf(df.format(newAveragePrice)); // Sadece 2 basamak göster
+
+        investment.setQuantity(newQuantity);
+        investment.setPricePerUnit(newAveragePrice);
+        investment.updateAmount();  // Toplam değeri günceller
+        investment.updateInvestmentBalance(); // Yatırım bakiyesini günceller
+
+        Investment savedInvestment = investmentRepository.save(investment);
+
+        // TransactionService'e işlemi bildir
+        notifyTransaction(account, totalCost, investmentType, quantity, pricePerUnit, "buy");
+
+        return savedInvestment;
+    }
     public Investment sellInvestment(String username, String investmentType, int quantity, double pricePerUnit) {
+        DecimalFormat df = new DecimalFormat("#.##");
+
         Investment investment = investmentRepository.findByUsernameAndInvestmentType(username, investmentType)
                 .orElseThrow(() -> new AccountNotFoundException("Investment not found for username: " + username));
 
@@ -96,6 +94,7 @@ public class InvestmentService {
 
         Account account = retrieveAccount(username);
         double totalReturn = quantity * pricePerUnit;
+        totalReturn = Double.valueOf(df.format(totalReturn)); // Sadece 2 basamak göster
 
         int remainingQuantity = investment.getQuantity() - quantity;
         if (remainingQuantity == 0) {
@@ -115,17 +114,14 @@ public class InvestmentService {
 
         return investment;
     }
-
     // Kullanıcı adıyla yatırımları getir
     public List<Investment> getInvestmentsByUsername(String username) {
         return investmentRepository.findByUsername(username);
     }
-
     // Yatırımı sil
     public void deleteInvestment(Long id) {
         investmentRepository.deleteById(id);
     }
-
     // Account'u Feign Client ile almak için kullanılan yardımcı metot
     private Account retrieveAccount(String username) {
         try {
@@ -139,7 +135,6 @@ public class InvestmentService {
             throw new AccountNotFoundException("Account service returned an error: " + e.getMessage());
         }
     }
-
     // Transaction'ı bildirmek için kullanılan yardımcı metot
     private void notifyTransaction(Account account, double amount, String investmentType, int quantity, double pricePerUnit, String action) {
         Transaction transaction = new Transaction();

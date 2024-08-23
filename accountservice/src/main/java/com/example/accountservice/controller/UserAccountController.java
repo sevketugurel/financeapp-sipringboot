@@ -1,5 +1,6 @@
 package com.example.accountservice.controller;
 
+import com.example.accountservice.exception.apiException.ApiRequestException;
 import com.example.accountservice.model.TransferRequest;
 import com.example.accountservice.model.Account;
 import com.example.accountservice.service.UserAccountService;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/accounts")
@@ -43,14 +45,14 @@ public class UserAccountController {
     }
 
     @GetMapping("/user/{username}")
-    public ResponseEntity<Account> getAccountByUsername(@PathVariable String username) {
-        Account account = service.getAccountByUsername(username);
-        if (account != null) {
-            return ResponseEntity.ok(account);
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    public Optional<Account>  getAccountByUsername(@PathVariable String username) {
+        Optional<Account> account = service.getAccountByUsername(username);
+        if (account.isEmpty()) {
+            throw new ApiRequestException("Account not found with username: " + username);
         }
+        return account;
     }
+
 
     @PostMapping("/transfer")
     public ResponseEntity<String> transferMoney(@RequestBody TransferRequest request) {

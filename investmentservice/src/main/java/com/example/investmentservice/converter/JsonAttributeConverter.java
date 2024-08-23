@@ -1,4 +1,4 @@
-package com.example.accountservice.converter;
+package com.example.investmentservice.converter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
