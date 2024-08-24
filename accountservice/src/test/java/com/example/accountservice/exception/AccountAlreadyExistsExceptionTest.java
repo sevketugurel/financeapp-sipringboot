@@ -38,12 +38,21 @@ class AccountAlreadyExistsExceptionTest {
         // Mock the repository to return an account with the same IBAN
         when(accountRepository.findByIban(iban)).thenReturn(Optional.of(account));
 
-        // Act and Assert
+        // if an account with the same IBAN already exists, an AccountAlreadyExistsException should be thrown
         AccountAlreadyExistsException exception = assertThrows(AccountAlreadyExistsException.class, () -> {
             accountService.saveAccount(account);
         });
 
         // Additional Assertion (Optional)
         assertEquals("Account with IBAN already exists: " + iban, exception.getMessage());
+    }
+
+    @Test
+    void testGetAccountById_ThrowsAccountNotFoundException() {
+        // Arrange
+        Long invalidId = 1L;
+        when(accountRepository.findById(invalidId)).thenReturn(Optional.empty());
+        // if an account with the given ID does not exist, an AccountNotFoundException should be thrown
+        assertThrows(AccountNotFoundException.class, () -> accountService.getAccountById(invalidId));
     }
 }
