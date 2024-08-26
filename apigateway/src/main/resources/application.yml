@@ -1,0 +1,36 @@
+server:
+  port: 8080
+
+spring:
+    application:
+        name: apigateway
+    cloud:
+    gateway:
+      routes:
+        - id: accountservice
+          uri: http://localhost:8084
+          predicates:
+            - Path=/accounts
+        - id: billingservice
+          uri: lb://billingservice
+          predicates:
+            - Path=/billings/**
+        - id: investmentservice
+          uri: lb://investmentservice
+          predicates:
+            - Path=/investments/**
+        - id: transactionservice
+          uri: lb://transactionservice
+          predicates:
+            - Path=/transactions/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web: DEBUG
+

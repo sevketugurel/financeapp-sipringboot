@@ -8,6 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="transactionservice" />
+        <module name="apigateway" />
         <module name="eureka-server" />
         <module name="accountservice" />
         <module name="billing-service" />
@@ -23,6 +24,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="accountservice" options="-parameters" />
       <module name="analytics-service" options="-parameters" />
+      <module name="apigateway" options="-parameters" />
       <module name="billing-service" options="-parameters" />
       <module name="eureka-server" options="-parameters" />
       <module name="investmentservice" options="-parameters" />
