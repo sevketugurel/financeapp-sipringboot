@@ -5,10 +5,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.Route;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,16 +26,13 @@ public class SpringCloudGatewayRoutingTest {
                 "/transactions/**", "lb://transactionservice"
         );
 
-        // Check if all expected routes are configured
-        expectedRoutes.forEach((path, uri) -> {
-            Predicate<Route> routePredicate = route ->
-                    route.getPredicate().toString().contains(path) &&
-                            route.getUri().toString().equals(uri);
+        // Get all routes from the RouteLocator
+        List<Route> routes = routeLocator.getRoutes().collectList().block();
 
-            boolean routeExists = Boolean.TRUE.equals(routeLocator.getRoutes()
-                    .filter(routePredicate)
-                    .hasElements()
-                    .block());
+        expectedRoutes.forEach((path, uri) -> {
+            boolean routeExists = routes.stream()
+                    .anyMatch(route -> route.getPredicate().toString().contains(path) &&
+                            route.getUri().toString().equals(uri));
 
             assertThat(routeExists).isTrue();
         });

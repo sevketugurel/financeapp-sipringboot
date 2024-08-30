@@ -51,34 +51,40 @@ public class BillingService {
 
         logger.info("Billing found for ID: {}. Username: {}", id, billing.getUsername());
 
+
+
         Account account = retrieveAccount(billing.getUsername());
-        if(!billing.getIsPaid()){
-            logger.info("Billing is not paid for ID: {}. Proceeding with payment.", id);
-            if (account.getBalance() >= billing.getAmount()) {
-                logger.info("Sufficient balance available for user: {}. Proceeding with payment.", billing.getUsername());
+        if(checkIfBillingIsPaid(billing) == null && account.getBalance() >= billing.getAmount()){
+            logger.info("Sufficient balance available for user: {}. Proceeding with payment.", billing.getUsername());
 
-                account.setBalance(account.getBalance() - billing.getAmount());
-                accountServiceClient.updateAccount(account.getUsername(), account);
-                logger.info("Account balance updated for user: {}", billing.getUsername());
+            account.setBalance(account.getBalance() - billing.getAmount());
+            accountServiceClient.updateAccount(account.getUsername(), account);
+            logger.info("Account balance updated for user: {}", billing.getUsername());
 
-                billing.setIsPaid(true);
-                billing.setPaymentDate(LocalDateTime.now());
-                Billing savedBilling = billingRepository.save(billing);
-                logger.info("Billing marked as paid and saved for ID: {}", id);
+            billing.setIsPaid(true);
+            billing.setPaymentDate(LocalDateTime.now());
+            Billing savedBilling = billingRepository.save(billing);
+            logger.info("Billing marked as paid and saved for ID: {}", id);
 
-                notifyTransaction(account, billing);
+            notifyTransaction(account, billing);
 
-                return savedBilling;
-            } else {
-                logger.error("Insufficient balance for user: {}", billing.getUsername());
-                throw new InsufficientBalanceException("Insufficient balance for user: " + billing.getUsername());
-            }
+            return savedBilling;
+
         } else {
-            logger.error("Billing is already paid for ID: {}", id);
-            throw new BillingPaidException("Billing is already paid for ID: " + id);
+            logger.error("Insufficient balance for user: {}", billing.getUsername());
+            throw new InsufficientBalanceException("Insufficient balance for user: " + billing.getUsername());
         }
-        
     }
+
+    private BillingPaidException checkIfBillingIsPaid(Billing billing) {
+        if (billing.getIsPaid()) {
+            logger.error("Billing is already paid for ID: {}", billing.getId());
+            throw new BillingPaidException("Billing is already paid for ID: " + billing.getId());
+        }
+        return null;
+    }
+
+
 
     public void enableAutoPay(Long id) {
         logger.info("Enabling auto-pay for Billing ID: {}", id);

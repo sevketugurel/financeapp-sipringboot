@@ -1,12 +1,15 @@
 package com.example.billingservice.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "billings")
+@AllArgsConstructor
+
 public class Billing {
 
     @Id
@@ -47,5 +50,9 @@ public class Billing {
         this.billingDate = LocalDateTime.now(); // Fatura oluşturulduğunda tarih atanır
         this.isPaid = false; // Varsayılan olarak ödenmemiş
         this.autoPay = false; // Varsayılan olarak otomatik ödeme devre dışı
+    }
+
+
+    public Billing(long l, String username, double v, boolean b, LocalDateTime now) {
     }
 }

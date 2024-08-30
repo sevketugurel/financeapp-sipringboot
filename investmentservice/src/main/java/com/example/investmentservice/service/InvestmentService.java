@@ -82,6 +82,7 @@ public class InvestmentService {
 
         return savedInvestment;
     }
+
     public Investment sellInvestment(String username, String investmentType, int quantity, double pricePerUnit) {
         DecimalFormat df = new DecimalFormat("#.##");
 
