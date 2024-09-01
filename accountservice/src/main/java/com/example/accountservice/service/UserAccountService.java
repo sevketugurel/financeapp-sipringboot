@@ -6,6 +6,7 @@ import com.example.accountservice.exception.apiException.ApiRequestException;
 import com.example.accountservice.model.Transaction;
 import com.example.accountservice.model.Account;
 import com.example.accountservice.repository.UserAccountRepository;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +34,7 @@ public class UserAccountService {
     }
 
     public Account saveAccount(Account account) {
-        // IBAN'in unique olduğundan emin olun
+        // Ensure IBAN is unique
         if (repository.findByIban(account.getIban()).isPresent()) {
             throw new AccountAlreadyExistsException("Account with IBAN already exists: " + account.getIban());
         }
@@ -51,7 +52,7 @@ public class UserAccountService {
         Account existingAccount = repository.findByUsername(username)
                 .orElseThrow(() -> new AccountNotFoundException("Account not found with username: " + username));
 
-        // Güncellenen bilgiler mevcut hesaba aktarılır
+        // Update the existing account with new information
         existingAccount.setBalance(account.getBalance());
         existingAccount.setIban(account.getIban());
 
@@ -62,15 +63,36 @@ public class UserAccountService {
         return repository.findByUsername(username);
     }
 
+    @CircuitBreaker(name = "transactionService", fallbackMethod = "fallbackTransactionService")
     public void transferMoney(String senderIban, String receiverIban, Double amount) {
         Account sender = repository.findByIban(senderIban)
                 .orElseThrow(() -> new ApiRequestException("Sender account not found with IBAN: " + senderIban));
 
         Account receiver = repository.findByIban(receiverIban)
-                .orElseThrow(() -> new ApiRequestException( "Receiver account not found with IBAN: " + receiverIban));
+                .orElseThrow(() -> new ApiRequestException("Receiver account not found with IBAN: " + receiverIban));
 
         if (sender.getBalance() < amount) {
-            throw new ApiRequestException( "Insufficient funds in sender's account");
+            throw new ApiRequestException("Insufficient funds in sender's account");
+        }
+
+        // Create transaction details for sender
+        Transaction senderTransaction = createTransaction(sender.getId().toString(), -amount, senderIban, receiverIban, amount);
+
+        // Notify the transaction service for the sender
+        try {
+            transactionClient.saveTransaction(senderTransaction);
+        } catch (Exception e) {
+            throw new ApiRequestException("Failed to notify TransactionService for the transaction from sender IBAN: " + senderIban, e);
+        }
+
+        // Create transaction details for receiver
+        Transaction receiverTransaction = createTransaction(receiver.getId().toString(), amount, senderIban, receiverIban, amount);
+
+        // Notify the transaction service for the receiver
+        try {
+            transactionClient.saveTransaction(receiverTransaction);
+        } catch (Exception e) {
+            throw new ApiRequestException("Failed to notify TransactionService for the transaction to receiver IBAN: " + receiverIban, e);
         }
 
         // Perform the money transfer
@@ -79,38 +101,27 @@ public class UserAccountService {
 
         repository.save(sender);
         repository.save(receiver);
+    }
 
-        // Create transaction details
+    // Fallback method in case the circuit breaker is triggered
+    private void fallbackTransactionService(String senderIban, String receiverIban, Double amount, Throwable throwable) {
+        // Log the error or handle the fallback scenario
+        throw new ApiRequestException("Transaction service is currently unavailable. Please try again later.");
+    }
+
+    private Transaction createTransaction(String accountId, Double amount, String senderIban, String receiverIban, Double transferAmount) {
         Transaction transaction = new Transaction();
         transaction.setServiceName("AccountService");
-        transaction.setAccountId(sender.getId().toString());
-        transaction.setAmount(-amount);
+        transaction.setAccountId(accountId);
+        transaction.setAmount(amount);
         transaction.setTimestamp(new Date());
 
         Map<String, Object> details = new HashMap<>();
         details.put("senderIban", senderIban);
         details.put("receiverIban", receiverIban);
-        details.put("transferAmount", amount);
+        details.put("transferAmount", transferAmount);
         transaction.setDetails(details);
 
-        try {
-            transactionClient.saveTransaction(transaction);
-        } catch (Exception e) {
-            throw new ApiRequestException("Failed to notify TransactionService for the transaction from sender IBAN: " + senderIban);
-        }
-
-        // Notify the transaction service for the receiver
-        Transaction receiverTransaction = new Transaction();
-        receiverTransaction.setServiceName("AccountService");
-        receiverTransaction.setAccountId(receiver.getId().toString());
-        receiverTransaction.setAmount(amount);
-        receiverTransaction.setTimestamp(new Date());
-        receiverTransaction.setDetails(details);
-
-        try {
-            transactionClient.saveTransaction(receiverTransaction);
-        } catch (Exception e) {
-            throw new ApiRequestException("Failed to notify TransactionService for the transaction to receiver IBAN: " + receiverIban + " TRANSACTİON SERVER ERROR!" );
-        }
+        return transaction;
     }
 }
